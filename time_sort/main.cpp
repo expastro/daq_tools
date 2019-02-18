@@ -1,13 +1,22 @@
 #include <getopt.h>
+#include <iostream>
 #include <list>
 #include "time_sort.h"
 
-void PrintHelp() {
+constexpr char VERSION[] = "1.0";
+
+void PrintHelp(char* program_name) {
+    std::cout << "Usage:\n";
+    std::cout << program_name << " [options] input_filename\n";
+    std::cout << "\n";
+    std::cout << "Options:\n";
+    std::cout << "-h, --help display this help and exit\n";
+    std::cout << "-v, --version  output version information and exit\n";
     
 }
 
-void PrintVersion() {
-    
+void PrintVersion(char* program_name) {
+    std::cout << program_name << " v" << VERSION << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -18,23 +27,23 @@ int main(int argc, char *argv[]) {
         {"version", no_argument, 0, 'v'},
     };
 
-
     while ((option = getopt_long(argc, argv, "h:?:v", options_list, 0)) != -1) {
         switch(option) {
             case 'h':
             case '?':
-            PrintHelp();
+            PrintHelp(argv[0]);
             return 0;
             break;
             case 'v':
-            PrintVersion();
+            PrintVersion(argv[0]);
             return 0;
             break;
         }
     }
     
     if (optind >= argc) {
-        printf("No input file supplied.\n");
+        std::cout << "No input file supplied.\n";
+        PrintHelp(argv[0]);
         return 1;
     }
     

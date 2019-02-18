@@ -2,8 +2,11 @@
 #include <fmt/format.h>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
+#include <vector>
 #include <TFile.h>
+#include <TH1I.h>
 #include <TTree.h>
 #include "common/common_types.h"
 #include "buffered_channel.h"
@@ -17,21 +20,33 @@ static bool EventsAvailable(const std::map<std::size_t, BufferedChannel>& channe
 }
 
 void SortTime(const std::string& filename) {
+    if (filename.empty()) {
+        std::cout << "Empty filename provided. ABORT!\n";
+        return;
+    }
+    
+    std::cout << "Start sorting " << filename << std::endl;
+    
     // Open old File and Tree
     TFile input(filename.c_str(),"READ");
     TTree* input_tree = static_cast<TTree*>(input.Get("h509"));
     
-    // TODO: Get number_of_channels
-    const std::size_t number_of_channels = 16;
+    // Get number_of_channels
+    TH1I channel_histogram("ch_hist", "ch_hist", 1000, 0, 1000);
+    input_tree->Draw("ch>>ch_hist");
+    const std::size_t number_of_channels = channel_histogram.GetMaximumBin();
+    std::cout << "File has " << number_of_channels << " channels\n";
+    
     std::string output_rootfile = fmt::format("{}_raw.root", filename.substr(0, filename.size() - 5));
     
     // Open new file and create trees:
     TFile output(output_rootfile.c_str(),"RECREATE");
-    std::array<TTree*, number_of_channels> new_trees;
+    std::vector<TTree*> new_trees;
+    new_trees.resize(number_of_channels);
     for (std::size_t k=0; k < number_of_channels; k++) {
         std::string tree_name = fmt::format("Channel_{:02d}",k);
         std::string condition = fmt::format("ch=={}",k);
-        new_trees[k]= input_tree->CopyTree(condition.c_str());
+        new_trees[k] = input_tree->CopyTree(condition.c_str());
         new_trees[k]->SetName(tree_name.c_str());
         new_trees[k]->Write();
     }
@@ -79,4 +94,5 @@ void SortTime(const std::string& filename) {
         ++currentEvent;
     }
     final_file.Write();
+    std::cout << "Finished sorting " << filename << std::endl;
 }
